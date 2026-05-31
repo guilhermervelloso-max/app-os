@@ -24,7 +24,7 @@ load_dotenv(ENV_FILE, override=False)
 
 MODEL = os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2")
 VOICE = os.getenv("OPENAI_REALTIME_VOICE", "alloy")
-WEB_SEARCH_MODEL = os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-5.5")
+WEB_SEARCH_MODEL = os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-4o-search-preview")
 VOICE_AGENT_BACKEND_URL = os.getenv("VOICE_AGENT_BACKEND_URL", "")
 
 SYSTEM_PROMPT = """You are a warm, concise voice assistant.
@@ -123,7 +123,7 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
     response = await client.responses.create(
         model=WEB_SEARCH_MODEL,
         input=prompt,
-        tools=[{"type": "web_search"}],
+        tools=[{"type": "web_search_preview"}],
     )
 
     text = getattr(response, "output_text", "") or ""
@@ -355,10 +355,13 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                             )
 
                             if tool_name == "web_search":
-                                result = await web_search(
-                                    query=str(arguments.get("query", "")),
-                                    max_results=int(arguments.get("max_results", 3)),
-                                )
+                                try:
+                                    result = await web_search(
+                                        query=str(arguments.get("query", "")),
+                                        max_results=int(arguments.get("max_results", 3)),
+                                    )
+                                except Exception as exc:
+                                    result = {"error": str(exc), "query": arguments.get("query", "")}
                             else:
                                 result = {
                                     "error": f"Unsupported tool: {tool_name}",
