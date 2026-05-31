@@ -32,12 +32,12 @@ body {
   min-height: 100dvh;
   padding: 24px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
 }
 
 .panel {
-  width: min(100%, 1100px);
+  width: 390px;
   min-height: calc(100dvh - 48px);
   padding: clamp(16px, 4vw, 48px);
   border-radius: 28px;
@@ -48,17 +48,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.status {
-  font-size: 0.85rem;
-  color: var(--muted);
-  letter-spacing: 0.02em;
-}
-
-.status::before {
-  content: "● ";
-  color: var(--accent);
 }
 
 .search-results {
@@ -112,6 +101,7 @@ body {
   .panel {
     width: 100%;
     min-height: 100dvh;
+    align-self: stretch;
     border-radius: 0;
     border: none;
     box-shadow: none;

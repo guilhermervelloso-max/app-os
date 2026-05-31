@@ -1,4 +1,3 @@
-const statusEl = document.getElementById("status");
 const searchResults = document.getElementById("searchResults");
 const assistantOutput = document.getElementById("assistantOutput");
 const backendBaseUrl = window.VOICE_AGENT_CONFIG?.backendUrl || window.location.origin;
@@ -15,10 +14,6 @@ let assistantTurnOpen = false;
 const pendingSearchCards = {};
 
 const TARGET_SAMPLE_RATE = 24000;
-
-function setStatus(text) {
-  statusEl.textContent = text;
-}
 
 function beginAssistantTurn() {
   assistantBuffer = "";
@@ -212,11 +207,6 @@ async function connect() {
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
 
-    if (data.type === "status") {
-      setStatus(data.message || data.state || "");
-      return;
-    }
-
     if (data.type === "assistant_text_delta") {
       appendAssistantText(data.delta);
       return;
@@ -251,12 +241,10 @@ async function connect() {
   socket.onclose = () => {
     cleanupAudio();
     isConnecting = false;
-    setStatus("Desconectado");
   };
 
   socket.onerror = () => {
     isConnecting = false;
-    setStatus("Erro de conexão");
   };
 }
 
@@ -281,6 +269,5 @@ function cleanupAudio() {
 }
 
 connect().catch((error) => {
-  setStatus("Erro de conexão");
   assistantOutput.textContent = error.message;
 });
