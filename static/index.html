@@ -1,15 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Voice Agent Prototype</title>
+    <title>Voice Agent</title>
     <script src="/config.js"></script>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <main class="stage">
-      <div id="assistantOutput" class="assistant-output" aria-live="polite"></div>
+      <div class="panel">
+        <div id="status" class="status">Conectando...</div>
+        <div id="searchResults" class="search-results"></div>
+        <div id="assistantOutput" class="assistant-output" aria-live="polite"></div>
+      </div>
     </main>
     <script type="module" src="/static/app.js"></script>
   </body>

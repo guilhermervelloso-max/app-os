@@ -1,3 +1,5 @@
+const statusEl = document.getElementById("status");
+const searchResults = document.getElementById("searchResults");
 const assistantOutput = document.getElementById("assistantOutput");
 const backendBaseUrl = window.VOICE_AGENT_CONFIG?.backendUrl || window.location.origin;
 
@@ -10,12 +12,18 @@ let playingTime = 0;
 let isConnecting = false;
 let assistantBuffer = "";
 let assistantTurnOpen = false;
+const pendingSearchCards = {};
 
 const TARGET_SAMPLE_RATE = 24000;
+
+function setStatus(text) {
+  statusEl.textContent = text;
+}
 
 function beginAssistantTurn() {
   assistantBuffer = "";
   assistantTurnOpen = true;
+  searchResults.innerHTML = "";
 }
 
 function appendAssistantText(text) {
@@ -33,6 +41,29 @@ function commitAssistantTurn() {
   }
   assistantBuffer = "";
   assistantTurnOpen = false;
+}
+
+function showSearchLoading(callId, query) {
+  const card = document.createElement("div");
+  card.className = "search-card loading";
+  const label = document.createElement("div");
+  label.className = "search-label";
+  label.textContent = "Buscando na internet";
+  card.appendChild(label);
+  card.appendChild(document.createTextNode(`"${query}"`));
+  searchResults.appendChild(card);
+  pendingSearchCards[callId] = card;
+}
+
+function showSearchResult(callId, result) {
+  const card = pendingSearchCards[callId];
+  if (!card) return;
+  card.classList.remove("loading");
+  const label = card.querySelector(".search-label");
+  label.textContent = "Resultado da busca";
+  const summary = result?.summary || result?.text || JSON.stringify(result);
+  card.childNodes[1].textContent = summary;
+  delete pendingSearchCards[callId];
 }
 
 function downsampleBuffer(buffer, inputSampleRate, outputSampleRate) {
@@ -181,12 +212,28 @@ async function connect() {
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
 
+    if (data.type === "status") {
+      setStatus(data.message || data.state || "");
+      return;
+    }
+
     if (data.type === "assistant_text_delta") {
       appendAssistantText(data.delta);
       return;
     }
 
     if (data.type === "assistant_transcript_delta") {
+      return;
+    }
+
+    if (data.type === "tool_call" && data.name === "web_search") {
+      const query = data.arguments?.query || "";
+      showSearchLoading(data.call_id, query);
+      return;
+    }
+
+    if (data.type === "tool_result" && data.name === "web_search") {
+      showSearchResult(data.call_id, data.result);
       return;
     }
 
@@ -204,10 +251,12 @@ async function connect() {
   socket.onclose = () => {
     cleanupAudio();
     isConnecting = false;
+    setStatus("Desconectado");
   };
 
   socket.onerror = () => {
     isConnecting = false;
+    setStatus("Erro de conexão");
   };
 }
 
@@ -232,5 +281,6 @@ function cleanupAudio() {
 }
 
 connect().catch((error) => {
-  assistantOutput.textContent = `Connection error: ${error.message}`;
+  setStatus("Erro de conexão");
+  assistantOutput.textContent = error.message;
 });
