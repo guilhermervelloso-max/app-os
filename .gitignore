@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+work/deps/
+work/
+work/*.log
+work/_generated-config.js
+.venv/
+venv/
+env/
+node_modules/
