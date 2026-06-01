@@ -364,7 +364,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                                 item={
                                     "type": "function_call_output",
                                     "call_id": call_id,
-                                    "output": _safe_json(result),
+                                    "output": result.get("summary") or result.get("error", "No results found."),
                                 }
                             )
                             await connection.response.create()
