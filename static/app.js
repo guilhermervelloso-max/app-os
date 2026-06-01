@@ -9,6 +9,7 @@ let mediaSource = null;
 let scriptNode = null;
 let playingTime = 0;
 let isConnecting = false;
+let isModelSpeaking = false;
 let assistantBuffer = "";
 let assistantTurnOpen = false;
 const pendingSearchCards = {};
@@ -174,9 +175,9 @@ async function connect() {
 
     mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
       },
     });
     mediaSource = audioContext.createMediaStreamSource(mediaStream);
@@ -186,6 +187,7 @@ async function connect() {
 
     scriptNode.port.onmessage = (event) => {
       if (socket.readyState !== WebSocket.OPEN) return;
+      if (isModelSpeaking) return;
       const input = event.data;
       const downsampled = downsampleBuffer(
         input,
@@ -229,21 +231,25 @@ async function connect() {
 
     if (data.type === "response_done") {
       commitAssistantTurn();
+      isModelSpeaking = false;
       return;
     }
 
     if (data.type === "audio") {
+      isModelSpeaking = true;
       enqueueAudio(data.delta);
       return;
     }
   };
 
   socket.onclose = () => {
+    isModelSpeaking = false;
     cleanupAudio();
     isConnecting = false;
   };
 
   socket.onerror = () => {
+    isModelSpeaking = false;
     isConnecting = false;
   };
 }
