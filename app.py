@@ -119,12 +119,21 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
     )
 
     client = make_client()
-    response = await client.chat.completions.create(
+    response = await client.responses.create(
         model=WEB_SEARCH_MODEL,
-        messages=[{"role": "user", "content": prompt}],
+        input=prompt,
+        tools=[{"type": "web_search_preview"}],
     )
 
-    text = (response.choices[0].message.content or "").strip()
+    text = ""
+    for item in getattr(response, "output", []):
+        if getattr(item, "type", "") == "message":
+            for part in getattr(item, "content", []):
+                if getattr(part, "type", "") == "output_text":
+                    text += getattr(part, "text", "")
+    if not text:
+        text = getattr(response, "output_text", "") or ""
+    text = text.strip()
 
     if not text:
         text = "I searched the web, but I could not extract a readable summary."
