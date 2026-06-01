@@ -183,8 +183,10 @@ async function connect() {
     });
     mediaSource = audioContext.createMediaStreamSource(mediaStream);
     scriptNode = new AudioWorkletNode(audioContext, "pcm-processor");
+    const silentGain = audioContext.createGain();
+    silentGain.gain.value = 0;
     mediaSource.connect(scriptNode);
-    scriptNode.connect(audioContext.destination);
+    scriptNode.connect(silentGain);
 
     scriptNode.port.onmessage = (event) => {
       if (socket.readyState !== WebSocket.OPEN) return;

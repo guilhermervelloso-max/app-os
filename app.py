@@ -253,6 +253,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         continue
 
             async def openai_to_browser() -> None:
+                response_audio_started = False
                 async for event in connection:
                     event_type = getattr(event, "type", "")
 
@@ -279,6 +280,9 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         continue
 
                     if event_type == "response.output_audio.delta":
+                        if not response_audio_started:
+                            response_audio_started = True
+                            await connection.input_audio_buffer.clear()
                         await send_text(
                             websocket,
                             {
@@ -393,6 +397,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         continue
 
                     if event_type == "response.done":
+                        response_audio_started = False
                         await send_text(
                             websocket,
                             {
