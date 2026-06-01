@@ -237,8 +237,12 @@ async function connect() {
 
     if (data.type === "response_done") {
       commitAssistantTurn();
-      isModelSpeaking = false;
-      isToolCallInProgress = false;
+      if (isToolCallInProgress) {
+        isToolCallInProgress = false;
+        // isModelSpeaking permanece true — segunda resposta (áudio) ainda está chegando
+      } else {
+        isModelSpeaking = false;
+      }
       return;
     }
 
