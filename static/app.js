@@ -10,6 +10,7 @@ let scriptNode = null;
 let playingTime = 0;
 let isConnecting = false;
 let isModelSpeaking = false;
+let isToolCallInProgress = false;
 let assistantBuffer = "";
 let assistantTurnOpen = false;
 const pendingSearchCards = {};
@@ -219,19 +220,25 @@ async function connect() {
     }
 
     if (data.type === "tool_call" && data.name === "web_search") {
-      const query = data.arguments?.query || "";
-      showSearchLoading(data.call_id, query);
+      isToolCallInProgress = true;
+      isModelSpeaking = true;
+      showSearchLoading(data.call_id, data.arguments?.query || "");
       return;
     }
 
     if (data.type === "tool_result" && data.name === "web_search") {
+      isModelSpeaking = true;
       showSearchResult(data.call_id, data.result);
       return;
     }
 
     if (data.type === "response_done") {
       commitAssistantTurn();
-      isModelSpeaking = false;
+      if (isToolCallInProgress) {
+        isToolCallInProgress = false;
+      } else {
+        isModelSpeaking = false;
+      }
       return;
     }
 
@@ -244,12 +251,14 @@ async function connect() {
 
   socket.onclose = () => {
     isModelSpeaking = false;
+    isToolCallInProgress = false;
     cleanupAudio();
     isConnecting = false;
   };
 
   socket.onerror = () => {
     isModelSpeaking = false;
+    isToolCallInProgress = false;
     isConnecting = false;
   };
 }
