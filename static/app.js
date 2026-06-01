@@ -141,6 +141,21 @@ function enqueueAudio(base64) {
   playingTime += buffer.duration;
 }
 
+function reEnableMicAfterPlayback() {
+  if (!audioContext) {
+    isModelSpeaking = false;
+    return;
+  }
+  if (playingTime > audioContext.currentTime + 0.05) {
+    setTimeout(reEnableMicAfterPlayback, 100);
+    return;
+  }
+  isModelSpeaking = false;
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: "clear" }));
+  }
+}
+
 async function connect() {
   if (isConnecting || (socket && socket.readyState === WebSocket.OPEN)) {
     return;
@@ -241,7 +256,7 @@ async function connect() {
         isToolCallInProgress = false;
         // isModelSpeaking permanece true — segunda resposta (áudio) ainda está chegando
       } else {
-        isModelSpeaking = false;
+        reEnableMicAfterPlayback();
       }
       return;
     }
