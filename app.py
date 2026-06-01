@@ -126,11 +126,7 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
     text = (response.choices[0].message.content or "").strip()
     if not text:
         text = "No results found."
-    lines = [l.strip() for l in text.splitlines() if l.strip()]
-    if len(lines) > max_results + 2:
-        lines = lines[: max_results + 2]
-        lines.append("...")
-    return {"query": query, "summary": "\n".join(lines), "model": "sonar-pro"}
+    return {"query": query, "summary": text, "model": "sonar-pro"}
 
 
 async def send_text(ws: WebSocket, payload: dict[str, Any]) -> None:
