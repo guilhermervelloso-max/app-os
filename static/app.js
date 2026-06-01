@@ -219,14 +219,14 @@ async function connect() {
       return;
     }
 
-    if (data.type === "tool_call" && data.name === "web_search") {
+    if (data.type === "tool_call" && data.name === "lookup_current_info") {
       isToolCallInProgress = true;
       isModelSpeaking = true;
       showSearchLoading(data.call_id, data.arguments?.query || "");
       return;
     }
 
-    if (data.type === "tool_result" && data.name === "web_search") {
+    if (data.type === "tool_result" && data.name === "lookup_current_info") {
       isModelSpeaking = true;
       showSearchResult(data.call_id, data.result);
       return;

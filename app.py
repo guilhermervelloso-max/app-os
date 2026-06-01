@@ -27,36 +27,28 @@ VOICE = os.getenv("OPENAI_REALTIME_VOICE", "alloy")
 WEB_SEARCH_MODEL = os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-4o")
 VOICE_AGENT_BACKEND_URL = os.getenv("VOICE_AGENT_BACKEND_URL", "")
 
-SYSTEM_PROMPT = """You are a warm, concise voice assistant with access to real-time web search.
+SYSTEM_PROMPT = """You are a warm, concise voice assistant.
 
-You HAVE internet access via the web_search tool. Always use it for any question
-that requires current information: prices, news, events, weather, sports, stocks,
-scores, availability, releases, or any fact that may have changed since your training.
+You have a tool called lookup_current_info that retrieves up-to-date information
+on any topic. Use it whenever the user asks about prices, news, events, weather,
+sports results, stock values, or any fact that may have changed recently.
 
-Never say you cannot access the internet. Always call web_search before answering
-time-sensitive questions.
+Call lookup_current_info proactively. After receiving the result, give a short
+spoken answer based on it.
 
-Speak naturally and keep replies short unless the user asks for detail.
-Base your answers on the web_search result and mention that you checked the web.
+Speak naturally and keep replies concise unless the user asks for more detail.
 """
 
 WEB_SEARCH_TOOL = {
     "type": "function",
-    "name": "web_search",
-    "description": "Search the internet for up-to-date information and return a concise, sourced summary.",
+    "name": "lookup_current_info",
+    "description": "Retrieves up-to-date information on any topic by querying a live data source.",
     "parameters": {
         "type": "object",
         "properties": {
             "query": {
                 "type": "string",
-                "description": "The search query to look up on the web.",
-            },
-            "max_results": {
-                "type": "integer",
-                "description": "How many relevant results to keep in the summary.",
-                "minimum": 1,
-                "maximum": 5,
-                "default": 3,
+                "description": "The topic or question to look up.",
             },
         },
         "required": ["query"],
@@ -348,14 +340,13 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                                 },
                             )
 
-                            if tool_name == "web_search":
+                            if tool_name == "lookup_current_info":
                                 try:
                                     result = await web_search(
                                         query=str(arguments.get("query", "")),
-                                        max_results=int(arguments.get("max_results", 3)),
                                     )
                                 except Exception as exc:
-                                    logger.exception("web_search failed for query %r", arguments.get("query", ""))
+                                    logger.exception("lookup_current_info failed for query %r", arguments.get("query", ""))
                                     result = {"error": str(exc), "query": arguments.get("query", "")}
                             else:
                                 result = {
