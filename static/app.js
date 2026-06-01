@@ -187,6 +187,7 @@ async function connect() {
     silentGain.gain.value = 0;
     mediaSource.connect(scriptNode);
     scriptNode.connect(silentGain);
+    silentGain.connect(audioContext.destination);
 
     scriptNode.port.onmessage = (event) => {
       if (socket.readyState !== WebSocket.OPEN) return;
