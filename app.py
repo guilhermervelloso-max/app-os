@@ -193,7 +193,11 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                     "modalities": ["audio", "text"],
                     "voice": VOICE,
                     "instructions": SYSTEM_PROMPT,
-                    "turn_detection": {"type": "server_vad"},
+                    "turn_detection": {
+                        "type": "server_vad",
+                        "threshold": 0.75,
+                    },
+                    "input_audio_noise_reduction": {"type": "far_field"},
                     "tools": [WEB_SEARCH_TOOL],
                 }
             )
