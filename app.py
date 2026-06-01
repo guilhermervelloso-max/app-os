@@ -24,7 +24,7 @@ load_dotenv(ENV_FILE, override=False)
 
 MODEL = os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2")
 VOICE = os.getenv("OPENAI_REALTIME_VOICE", "alloy")
-WEB_SEARCH_MODEL = os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-5.5")
+PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
 VOICE_AGENT_BACKEND_URL = os.getenv("VOICE_AGENT_BACKEND_URL", "")
 
 SYSTEM_PROMPT = """You are a warm, concise voice assistant.
@@ -104,25 +104,24 @@ def _encode_audio_chunk(data: bytes) -> str:
 
 
 async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
-    prompt = (
-        "Search the web for the user's question and summarize the most useful current "
-        "information in a compact, factual way. Include source URLs if available.\n\n"
-        f"Question: {query}"
+    if not PERPLEXITY_API_KEY:
+        return {"error": "PERPLEXITY_API_KEY not configured", "query": query}
+    client = AsyncOpenAI(
+        api_key=PERPLEXITY_API_KEY,
+        base_url="https://api.perplexity.ai",
     )
-    client = make_client()
-    response = await client.responses.create(
-        model=WEB_SEARCH_MODEL,
-        input=prompt,
-        tools=[{"type": "web_search"}],
+    response = await client.chat.completions.create(
+        model="sonar",
+        messages=[{"role": "user", "content": query}],
     )
-    text = (getattr(response, "output_text", None) or "").strip()
+    text = (response.choices[0].message.content or "").strip()
     if not text:
-        text = "I searched the web, but I could not extract a readable summary."
+        text = "No results found."
     lines = [l.strip() for l in text.splitlines() if l.strip()]
     if len(lines) > max_results + 2:
         lines = lines[: max_results + 2]
         lines.append("...")
-    return {"query": query, "summary": "\n".join(lines), "model": WEB_SEARCH_MODEL}
+    return {"query": query, "summary": "\n".join(lines), "model": "sonar"}
 
 
 async def send_text(ws: WebSocket, payload: dict[str, Any]) -> None:
