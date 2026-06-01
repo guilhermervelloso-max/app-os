@@ -192,18 +192,10 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
             await connection.session.update(
                 session={
-                    "type": "realtime",
-                    "model": MODEL,
+                    "modalities": ["audio", "text"],
                     "voice": VOICE,
                     "instructions": SYSTEM_PROMPT,
-                    "output_modalities": ["audio", "text"],
-                    "audio": {
-                        "input": {
-                            "turn_detection": {
-                                "type": "server_vad",
-                            }
-                        }
-                    },
+                    "turn_detection": {"type": "server_vad"},
                     "tools": [WEB_SEARCH_TOOL],
                 }
             )
