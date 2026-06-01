@@ -27,26 +27,18 @@ VOICE = os.getenv("OPENAI_REALTIME_VOICE", "alloy")
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY", "")
 VOICE_AGENT_BACKEND_URL = os.getenv("VOICE_AGENT_BACKEND_URL", "")
 
-SYSTEM_PROMPT = """You are a warm, concise voice assistant.
+SYSTEM_PROMPT = """You are a warm, concise voice assistant with access to real-time web search.
 
-IMPORTANT: Your training data ends in January 2020. You have no reliable knowledge of
-prices, news, sports, weather, people, companies, products, or any events after that date.
+You have a tool called lookup_current_info. Use it for any question about:
+- prices (crypto, stocks, currency, goods)
+- news or current events
+- sports scores or standings
+- weather
+- any information that changes over time
 
-For any question that involves:
-- prices (crypto, stocks, currency, goods, services)
-- news, current events, recent releases
-- sports scores, standings, results
-- weather or forecasts
-- anything that may have changed since 2020
-
-You MUST call lookup_current_info before answering. Do not guess or use your training data
-for these topics — it is outdated and unreliable.
-
-For timeless topics (math, grammar, history before 2020, how-to instructions) you may
-answer directly.
-
-After calling lookup_current_info, give a short spoken answer based on the result.
-Speak naturally and keep replies concise.
+Call the tool, then give a short spoken answer based on the result you received.
+For timeless topics (math, history, how-to) answer directly.
+Keep replies concise and natural.
 """
 
 WEB_SEARCH_TOOL = {
