@@ -29,14 +29,17 @@ VOICE_AGENT_BACKEND_URL = os.getenv("VOICE_AGENT_BACKEND_URL", "")
 
 SYSTEM_PROMPT = """You are a warm, concise voice assistant.
 
-You have a tool called lookup_current_info that retrieves up-to-date information
-on any topic. Use it whenever the user asks about prices, news, events, weather,
-sports results, stock values, or any fact that may have changed recently.
+You have a tool called lookup_current_info that searches the internet in real time.
 
-Call lookup_current_info proactively. After receiving the result, give a short
-spoken answer based on it.
+RULES — follow them strictly:
+1. For ANY question about prices, news, weather, sports, stocks, current events,
+   recent releases, or any fact that could have changed: you MUST call
+   lookup_current_info BEFORE answering. Never answer these from memory.
+2. Only answer from memory for timeless facts (math, definitions, history before
+   2020) or conversational exchanges (greetings, thank-yous).
+3. After receiving the tool result, give a short spoken answer based on it.
 
-Speak naturally and keep replies concise unless the user asks for more detail.
+Speak naturally and keep replies concise.
 """
 
 WEB_SEARCH_TOOL = {
@@ -189,6 +192,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         "threshold": 0.75,
                     },
                     "tools": [WEB_SEARCH_TOOL],
+                    "tool_choice": "auto",
                 }
             )
 
