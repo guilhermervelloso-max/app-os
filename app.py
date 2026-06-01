@@ -189,7 +189,6 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         "type": "server_vad",
                         "threshold": 0.75,
                     },
-                    "input_audio_noise_reduction": {"type": "far_field"},
                     "tools": [WEB_SEARCH_TOOL],
                 }
             )

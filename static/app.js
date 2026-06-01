@@ -236,11 +236,15 @@ async function connect() {
 
     if (data.type === "response_done") {
       commitAssistantTurn();
-      if (isToolCallInProgress) {
-        isToolCallInProgress = false;
-      } else {
-        isModelSpeaking = false;
-      }
+      isModelSpeaking = false;
+      isToolCallInProgress = false;
+      return;
+    }
+
+    if (data.type === "error") {
+      console.error("[voice-agent] API error:", data.code, data.message);
+      isModelSpeaking = false;
+      isToolCallInProgress = false;
       return;
     }
 
