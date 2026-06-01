@@ -112,7 +112,6 @@ def _encode_audio_chunk(data: bytes) -> str:
 
 
 async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
-    """Use the Responses API web_search tool to get a current answer."""
     prompt = (
         "Search the web for the user's question and summarize the most useful current "
         "information in a compact, factual way. Include source URLs if available.\n\n"
@@ -120,14 +119,12 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
     )
 
     client = make_client()
-    response = await client.responses.create(
+    response = await client.chat.completions.create(
         model=WEB_SEARCH_MODEL,
-        input=prompt,
-        tools=[{"type": "web_search_preview"}],
+        messages=[{"role": "user", "content": prompt}],
     )
 
-    text = getattr(response, "output_text", "") or ""
-    text = text.strip()
+    text = (response.choices[0].message.content or "").strip()
 
     if not text:
         text = "I searched the web, but I could not extract a readable summary."
@@ -135,7 +132,7 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     if len(lines) > max_results + 2:
         lines = lines[: max_results + 2]
-        lines.append("...")  # keep the tool result compact for the voice model
+        lines.append("...")
 
     return {
         "query": query,
