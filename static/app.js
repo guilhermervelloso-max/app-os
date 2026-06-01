@@ -146,14 +146,18 @@ function reEnableMicAfterPlayback() {
     isModelSpeaking = false;
     return;
   }
-  if (playingTime > audioContext.currentTime + 0.05) {
+  // Aguarda fim do áudio + 300ms de buffer para eco morrer
+  if (playingTime > audioContext.currentTime - 0.3) {
     setTimeout(reEnableMicAfterPlayback, 100);
     return;
   }
-  isModelSpeaking = false;
+  // Envia clear antes de liberar o mic para o buffer estar limpo quando o mic ligar
   if (socket && socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type: "clear" }));
   }
+  setTimeout(() => {
+    isModelSpeaking = false;
+  }, 100);
 }
 
 async function connect() {
