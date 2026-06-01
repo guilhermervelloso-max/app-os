@@ -27,17 +27,17 @@ VOICE = os.getenv("OPENAI_REALTIME_VOICE", "alloy")
 WEB_SEARCH_MODEL = os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-4o")
 VOICE_AGENT_BACKEND_URL = os.getenv("VOICE_AGENT_BACKEND_URL", "")
 
-SYSTEM_PROMPT = """You are a warm, concise voice assistant.
+SYSTEM_PROMPT = """You are a warm, concise voice assistant with access to real-time web search.
+
+You HAVE internet access via the web_search tool. Always use it for any question
+that requires current information: prices, news, events, weather, sports, stocks,
+scores, availability, releases, or any fact that may have changed since your training.
+
+Never say you cannot access the internet. Always call web_search before answering
+time-sensitive questions.
 
 Speak naturally and keep replies short unless the user asks for detail.
-Use the web_search tool whenever the answer depends on current facts, recent events,
-prices, schedules, availability, releases, or any information that may have changed.
-
-If you use web search, base your answer on the latest information available and say
-that you checked the web. If information is uncertain, say so plainly.
-
-When the user asks something that depends on the present moment, prefer exact dates
-and concrete facts over vague relative language.
+Base your answers on the web_search result and mention that you checked the web.
 """
 
 WEB_SEARCH_TOOL = {
@@ -118,32 +118,18 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
         f"Question: {query}"
     )
     client = make_client()
-    response = await asyncio.wait_for(
-        client.responses.create(
-            model=WEB_SEARCH_MODEL,
-            input=prompt,
-            tools=[{"type": "web_search"}],
-        ),
-        timeout=15.0,
+    response = await client.responses.create(
+        model=WEB_SEARCH_MODEL,
+        input=prompt,
+        tools=[{"type": "web_search"}],
     )
-
-    text = ""
-    try:
-        text = response.output[0].content[0].text
-    except Exception:
-        pass
-    if not text:
-        text = getattr(response, "output_text", "") or ""
-    text = text.strip()
-
+    text = (getattr(response, "output_text", None) or "").strip()
     if not text:
         text = "I searched the web, but I could not extract a readable summary."
-
     lines = [l.strip() for l in text.splitlines() if l.strip()]
     if len(lines) > max_results + 2:
         lines = lines[: max_results + 2]
         lines.append("...")
-
     return {"query": query, "summary": "\n".join(lines), "model": WEB_SEARCH_MODEL}
 
 
@@ -154,6 +140,15 @@ async def send_text(ws: WebSocket, payload: dict[str, Any]) -> None:
 @app.get("/")
 async def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/api/test-search")
+async def test_search(q: str = "preço do bitcoin hoje") -> JSONResponse:
+    try:
+        result = await web_search(q)
+        return JSONResponse(result)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc), "type": type(exc).__name__}, status_code=500)
 
 
 @app.get("/health")
@@ -356,6 +351,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                                         max_results=int(arguments.get("max_results", 3)),
                                     )
                                 except Exception as exc:
+                                    logger.exception("web_search failed for query %r", arguments.get("query", ""))
                                     result = {"error": str(exc), "query": arguments.get("query", "")}
                             else:
                                 result = {
