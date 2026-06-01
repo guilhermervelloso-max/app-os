@@ -24,7 +24,7 @@ load_dotenv(ENV_FILE, override=False)
 
 MODEL = os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2")
 VOICE = os.getenv("OPENAI_REALTIME_VOICE", "alloy")
-WEB_SEARCH_MODEL = os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-4o")
+WEB_SEARCH_MODEL = os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-5.5")
 VOICE_AGENT_BACKEND_URL = os.getenv("VOICE_AGENT_BACKEND_URL", "")
 
 SYSTEM_PROMPT = """You are a warm, concise voice assistant.
