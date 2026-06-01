@@ -5,6 +5,7 @@ const backendBaseUrl = window.VOICE_AGENT_CONFIG?.backendUrl || window.location.
 let socket = null;
 let audioContext = null;
 let mediaStream = null;
+let audioTrack = null;
 let mediaSource = null;
 let scriptNode = null;
 let playingTime = 0;
@@ -141,6 +142,18 @@ function enqueueAudio(base64) {
   playingTime += buffer.duration;
 }
 
+function enableEchoCancellation() {
+  if (audioTrack) {
+    audioTrack.applyConstraints({ echoCancellation: true, noiseSuppression: true }).catch(() => {});
+  }
+}
+
+function disableEchoCancellation() {
+  if (audioTrack) {
+    audioTrack.applyConstraints({ echoCancellation: false, noiseSuppression: false }).catch(() => {});
+  }
+}
+
 function reEnableMicAfterPlayback() {
   if (!audioContext) {
     isModelSpeaking = false;
@@ -156,6 +169,7 @@ function reEnableMicAfterPlayback() {
     socket.send(JSON.stringify({ type: "clear" }));
   }
   setTimeout(() => {
+    disableEchoCancellation();
     isModelSpeaking = false;
   }, 100);
 }
@@ -200,6 +214,7 @@ async function connect() {
         autoGainControl: false,
       },
     });
+    audioTrack = mediaStream.getAudioTracks()[0];
     mediaSource = audioContext.createMediaStreamSource(mediaStream);
     scriptNode = new AudioWorkletNode(audioContext, "pcm-processor");
     const silentGain = audioContext.createGain();
@@ -244,6 +259,7 @@ async function connect() {
     if (data.type === "tool_call" && data.name === "lookup_current_info") {
       isToolCallInProgress = true;
       isModelSpeaking = true;
+      enableEchoCancellation();
       showSearchLoading(data.call_id, data.arguments?.query || "");
       return;
     }
@@ -267,12 +283,14 @@ async function connect() {
 
     if (data.type === "error") {
       console.error("[voice-agent] API error:", data.code, data.message);
+      disableEchoCancellation();
       isModelSpeaking = false;
       isToolCallInProgress = false;
       return;
     }
 
     if (data.type === "audio") {
+      if (!isModelSpeaking) enableEchoCancellation();
       isModelSpeaking = true;
       enqueueAudio(data.delta);
       return;
@@ -280,6 +298,7 @@ async function connect() {
   };
 
   socket.onclose = () => {
+    disableEchoCancellation();
     isModelSpeaking = false;
     isToolCallInProgress = false;
     cleanupAudio();
@@ -287,6 +306,7 @@ async function connect() {
   };
 
   socket.onerror = () => {
+    disableEchoCancellation();
     isModelSpeaking = false;
     isToolCallInProgress = false;
     isConnecting = false;
@@ -306,6 +326,7 @@ function cleanupAudio() {
     mediaStream.getTracks().forEach((track) => track.stop());
     mediaStream = null;
   }
+  audioTrack = null;
   if (audioContext) {
     void audioContext.close();
     audioContext = null;
