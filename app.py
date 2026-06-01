@@ -24,7 +24,7 @@ load_dotenv(ENV_FILE, override=False)
 
 MODEL = os.getenv("OPENAI_REALTIME_MODEL", "gpt-realtime-2")
 VOICE = os.getenv("OPENAI_REALTIME_VOICE", "alloy")
-WEB_SEARCH_MODEL = os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-4o-search-preview")
+WEB_SEARCH_MODEL = os.getenv("OPENAI_WEB_SEARCH_MODEL", "gpt-4o")
 VOICE_AGENT_BACKEND_URL = os.getenv("VOICE_AGENT_BACKEND_URL", "")
 
 SYSTEM_PROMPT = """You are a warm, concise voice assistant.
@@ -117,20 +117,21 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
         "information in a compact, factual way. Include source URLs if available.\n\n"
         f"Question: {query}"
     )
-
     client = make_client()
-    response = await client.responses.create(
-        model=WEB_SEARCH_MODEL,
-        input=prompt,
-        tools=[{"type": "web_search_preview"}],
+    response = await asyncio.wait_for(
+        client.responses.create(
+            model=WEB_SEARCH_MODEL,
+            input=prompt,
+            tools=[{"type": "web_search"}],
+        ),
+        timeout=15.0,
     )
 
     text = ""
-    for item in getattr(response, "output", []):
-        if getattr(item, "type", "") == "message":
-            for part in getattr(item, "content", []):
-                if getattr(part, "type", "") == "output_text":
-                    text += getattr(part, "text", "")
+    try:
+        text = response.output[0].content[0].text
+    except Exception:
+        pass
     if not text:
         text = getattr(response, "output_text", "") or ""
     text = text.strip()
@@ -138,16 +139,12 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
     if not text:
         text = "I searched the web, but I could not extract a readable summary."
 
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
     if len(lines) > max_results + 2:
         lines = lines[: max_results + 2]
         lines.append("...")
 
-    return {
-        "query": query,
-        "summary": "\n".join(lines),
-        "model": WEB_SEARCH_MODEL,
-    }
+    return {"query": query, "summary": "\n".join(lines), "model": WEB_SEARCH_MODEL}
 
 
 async def send_text(ws: WebSocket, payload: dict[str, Any]) -> None:
