@@ -114,8 +114,14 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
         base_url="https://api.perplexity.ai",
     )
     response = await client.chat.completions.create(
-        model="sonar",
-        messages=[{"role": "user", "content": query}],
+        model="sonar-pro",
+        messages=[
+            {
+                "role": "system",
+                "content": "Search the internet for the most recent, up-to-date information. Always use real-time web search results, not your training knowledge.",
+            },
+            {"role": "user", "content": query},
+        ],
     )
     text = (response.choices[0].message.content or "").strip()
     if not text:
@@ -124,7 +130,7 @@ async def web_search(query: str, max_results: int = 3) -> dict[str, Any]:
     if len(lines) > max_results + 2:
         lines = lines[: max_results + 2]
         lines.append("...")
-    return {"query": query, "summary": "\n".join(lines), "model": "sonar"}
+    return {"query": query, "summary": "\n".join(lines), "model": "sonar-pro"}
 
 
 async def send_text(ws: WebSocket, payload: dict[str, Any]) -> None:
